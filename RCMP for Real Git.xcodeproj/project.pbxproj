@@ -1,0 +1,211 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9E524B5415D95D5500DF7D23 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E524B5315D95D5500DF7D23 /* main.cpp */; };
+		9E524B5615D95D5500DF7D23 /* RCMP_for_Real_Git.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 9E524B5515D95D5500DF7D23 /* RCMP_for_Real_Git.1 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9E524B4D15D95D5500DF7D23 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				9E524B5615D95D5500DF7D23 /* RCMP_for_Real_Git.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		9E524B4F15D95D5500DF7D23 /* RCMP for Real Git */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "RCMP for Real Git"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E524B5315D95D5500DF7D23 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		9E524B5515D95D5500DF7D23 /* RCMP_for_Real_Git.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = RCMP_for_Real_Git.1; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9E524B4C15D95D5500DF7D23 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		9E524B4415D95D5500DF7D23 = {
+			isa = PBXGroup;
+			children = (
+				9E524B5215D95D5500DF7D23 /* RCMP for Real Git */,
+				9E524B5015D95D5500DF7D23 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9E524B5015D95D5500DF7D23 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9E524B4F15D95D5500DF7D23 /* RCMP for Real Git */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9E524B5215D95D5500DF7D23 /* RCMP for Real Git */ = {
+			isa = PBXGroup;
+			children = (
+				9E524B5315D95D5500DF7D23 /* main.cpp */,
+				9E524B5515D95D5500DF7D23 /* RCMP_for_Real_Git.1 */,
+			);
+			path = "RCMP for Real Git";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9E524B4E15D95D5500DF7D23 /* RCMP for Real Git */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E524B5915D95D5500DF7D23 /* Build configuration list for PBXNativeTarget "RCMP for Real Git" */;
+			buildPhases = (
+				9E524B4B15D95D5500DF7D23 /* Sources */,
+				9E524B4C15D95D5500DF7D23 /* Frameworks */,
+				9E524B4D15D95D5500DF7D23 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "RCMP for Real Git";
+			productName = "RCMP for Real Git";
+			productReference = 9E524B4F15D95D5500DF7D23 /* RCMP for Real Git */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9E524B4615D95D5500DF7D23 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0440;
+				ORGANIZATIONNAME = "Wilcox Technologies LLC";
+			};
+			buildConfigurationList = 9E524B4915D95D5500DF7D23 /* Build configuration list for PBXProject "RCMP for Real Git" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 9E524B4415D95D5500DF7D23;
+			productRefGroup = 9E524B5015D95D5500DF7D23 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9E524B4E15D95D5500DF7D23 /* RCMP for Real Git */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9E524B4B15D95D5500DF7D23 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E524B5415D95D5500DF7D23 /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		9E524B5715D95D5500DF7D23 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		9E524B5815D95D5500DF7D23 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		9E524B5A15D95D5500DF7D23 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		9E524B5B15D95D5500DF7D23 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9E524B4915D95D5500DF7D23 /* Build configuration list for PBXProject "RCMP for Real Git" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E524B5715D95D5500DF7D23 /* Debug */,
+				9E524B5815D95D5500DF7D23 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E524B5915D95D5500DF7D23 /* Build configuration list for PBXNativeTarget "RCMP for Real Git" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E524B5A15D95D5500DF7D23 /* Debug */,
+				9E524B5B15D95D5500DF7D23 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 9E524B4615D95D5500DF7D23 /* Project object */;
+}
