@@ -1,0 +1,57 @@
+.Dd 2012-Aug-13               \" DATE
+.Dt real-git-rcmp 1      \" Program name and manual section number 
+.Os Unix
+.Sh NAME                 \" Section Header - required - don't modify 
+.Nm real-git-rcmp,
+.\" The following lines are read in generating the apropos(man -k) database. Use only key
+.\" words here as the database is built based on the words here and in the .ND line. 
+.Nm RCMP for Real Git.
+.\" Use .Nm macro to designate other names for the documented program.
+.Nd Allows "real git" repos to use RCMP Web service hooks.
+.Sh SYNOPSIS             \" Section Header - required - don't modify
+.Nm
+.Op Ar api_endpoint      \" [api_endpoint]
+.Sh DESCRIPTION          \" Section Header - required - don't modify
+.Nm allows one to use the RCMP Web service hook from repos not hosted on GitHub.
+See
+.Ar https://github.com/programble/rcmp
+for more information about RCMP.
+
+.Nm uses libgit2 to retrieve information about the git repository, libjson to
+format the JSON data, and libAmy to send the data to the URL specified by
+.Ar api_endpoint .
+
+Use the .Nm macro to refer to your program throughout the man page like such:
+.Nm
+Underlining is accomplished with the .Ar macro like this:
+.Ar underlined text .
+.Pp                      \" Inserts a space
+A list of items with descriptions:
+.Bl -tag -width -indent  \" Begins a tagged list 
+.It item a               \" Each item preceded by .It macro
+Description of item a
+.It item b
+Description of item b
+.El                      \" Ends the list
+.Pp
+A list of flags and their descriptions:
+.Bl -tag -width -indent  \" Differs from above in tag removed 
+.It Fl api_endpoint
+The URL of the API.
+.It Fl b
+Description of -b flag
+.El                      \" Ends the list
+.Pp
+.Sh ENVIRONMENT
+.Bl -tag -width "REPO_PATH" -indent
+.It Ev REPO_PATH
+If set, use
+.Ar REPO_PATH
+instead of current directory for the path to the git repository.
+.Sh SEE ALSO
+.\" List links in ascending order by section, alphabetically within a section.
+.\" Please do not reference files that do not exist without filing a bug report
+.Xr a 1 git,
+.Xr b 5 githooks,
+.\" .Sh BUGS              \" Document known, unremedied bugs
+.\" .Sh HISTORY           \" Document history if command behaves in a unique manner
