@@ -58,13 +58,18 @@ void usage(const char *prog_name)
  \param path		the path to the git repo
  \param old_id		the old commit ID
  \param ref_name	the name of the ref we're parsing (ref/name/master etc)
+ \param url		URL to post to
  
  This is what main() would look like if we didn't have to sanitise because users
  are lusers.
  */
-int git_hook_main(const char *path, git_oid old_id, const char *ref_name)
+int git_hook_main(const char *path, const char *old_id, const char *ref_name,
+		  const char *url)
 {
 	git_repository *repo;
+	git_oid base_oid;
+	git_revwalk *walker_tx_rgr;
+	git_commit *curr_commit;
 	
 	if(git_repository_open(&repo, path) != 0)
 	{
@@ -72,7 +77,15 @@ int git_hook_main(const char *path, git_oid old_id, const char *ref_name)
 		return -1;
 	}
 	
-	printf("git repo opened at %s\n", path);
+	git_oid_fromstr(&base_oid, old_id);
+	
+	git_revwalk_new(&walker_tx_rgr, repo);
+	git_revwalk_sorting(walker_tx_rgr, GIT_SORT_TIME | GIT_SORT_REVERSE);
+	git_revwalk_push(walker_tx_rgr, &base_oid);
+	
+	
+	
+	git_revwalk_free(walker_tx_rgr);
 	
 	git_repository_free(repo);
 	return 0;
@@ -117,7 +130,7 @@ int main(int argc, const char * argv[])
 	int ret;
 	
 	
-	if(argc != 2)
+	if(argc != 2 || argv[1] == NULL)
 	{
 		usage(getprogname());
 		return -1;
@@ -148,7 +161,8 @@ int main(int argc, const char * argv[])
 	}
 	
 	
-	ret = git_hook_main(git_repo_path);
+	// HOW READ FROM STDIN?!
+	ret = git_hook_main(git_repo_path, NULL, NULL, argv[1]);
 	free(git_repo_path);
 	
 	return ret;
