@@ -63,11 +63,10 @@ void usage(const char *prog_name)
  This is what main() would look like if we didn't have to sanitise because users
  are lusers.
  */
-int git_hook_main(const char *path, const char *old_id, const char *ref_name,
-		  const char *url)
+int git_hook_main(const char *path, git_oid old_id, git_oid new_id,
+		  const char *ref_name, const char *url)
 {
 	git_repository *repo;
-	git_oid base_oid;
 	git_revwalk *walker_tx_rgr;
 	git_commit *curr_commit;
 	
@@ -77,11 +76,9 @@ int git_hook_main(const char *path, const char *old_id, const char *ref_name,
 		return -1;
 	}
 	
-	git_oid_fromstr(&base_oid, old_id);
-	
 	git_revwalk_new(&walker_tx_rgr, repo);
 	git_revwalk_sorting(walker_tx_rgr, GIT_SORT_TIME | GIT_SORT_REVERSE);
-	git_revwalk_push(walker_tx_rgr, &base_oid);
+	git_revwalk_push(walker_tx_rgr, &old_id);
 	
 	
 	
@@ -126,7 +123,8 @@ char *find_git_repo_from_path(const char *path)
  */
 int main(int argc, const char * argv[])
 {
-	char *git_repo_path = NULL;
+	char *git_repo_path;
+	char *next_ref;
 	int ret;
 	
 	
@@ -161,8 +159,50 @@ int main(int argc, const char * argv[])
 	}
 	
 	
-	// HOW READ FROM STDIN?!
-	ret = git_hook_main(git_repo_path, NULL, NULL, argv[1]);
+	// handle refs passed via stdin
+	// format is "old-sha1 SP new-sha1 SP refname LF"
+	// so, fgets is a good tool for this
+	next_ref = static_cast<char *>(malloc(512));
+	while((next_ref = fgets(next_ref, 512, stdin)) != NULL)
+	{
+		git_oid old_id, new_id; char *ref;
+		
+		char *new_id_start;
+		
+		// Find the first space
+		char *space = strchr(next_ref, (int)' ');
+		if(space == NULL) continue;
+		
+		// Replace the space with NUL so the string is terminated
+		space[0] = '\0';
+		git_oid_fromstr(&old_id, next_ref);
+		
+		printf("old ID: %s\n", next_ref);
+		
+		// The new SHA1 starts after the space
+		new_id_start = space + 1;
+		space = strchr(new_id_start, (int)' ');
+		if(space == NULL) continue;
+		
+		// Replace the space with NUL so the string is terminated
+		space[0] = '\0';
+		git_oid_fromstr(&new_id, new_id_start);
+		
+		printf("new ID: %s\n", new_id_start);
+		
+		// The ref is whatever is left over after the new ID's space.
+		ref = strdup(space + 1);
+		
+		printf("ref: %s\n", ref);
+		
+		ret = git_hook_main(git_repo_path, old_id, new_id, ref, argv[1]);
+		
+		free(ref);
+		if(ret != 0) break;
+	}
+	free(next_ref);
+	
+	
 	free(git_repo_path);
 	
 	return ret;
