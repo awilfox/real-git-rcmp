@@ -58,13 +58,12 @@ void usage(const char *prog_name)
  \param path		the path to the git repo
  \param old_id		the old commit ID
  \param ref_name	the name of the ref we're parsing (ref/name/master etc)
- \param url		URL to post to
  
  This is what main() would look like if we didn't have to sanitise because users
  are lusers.
  */
 int git_hook_main(const char *path, git_oid old_id, git_oid new_id,
-		  const char *ref_name, const char *url)
+		  const char *ref_name)
 {
 	git_repository *repo;
 	git_revwalk *walker_tx_rgr;
@@ -128,7 +127,7 @@ int main(int argc, const char * argv[])
 	int ret;
 	
 	
-	if(argc != 2 || argv[1] == NULL)
+	if(argc < 2 || argv[1] == NULL)
 	{
 		usage(getprogname());
 		return -1;
@@ -195,7 +194,7 @@ int main(int argc, const char * argv[])
 		
 		printf("ref: %s\n", ref);
 		
-		ret = git_hook_main(git_repo_path, old_id, new_id, ref, argv[1]);
+		ret = git_hook_main(git_repo_path, old_id, new_id, ref);
 		
 		free(ref);
 		if(ret != 0) break;
