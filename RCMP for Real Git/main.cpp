@@ -7,6 +7,8 @@
 //
 
 #include <git2.h>
+#include "json/libjson.h"
+#include <libAmy/libAmy.h>
 #include <errno.h>
 #include <iostream>
 using namespace std;
@@ -44,47 +46,129 @@ void usage(const char *prog_name)
 {
 	cout << prog_name << " - RCMP for Real Git" << endl;
 	cout << endl;
-	cout << "Usage: " << prog_name << " api_endpoint" << endl;
-	cout << "\tapi_endpoint\tSend commit info to this URL." << endl;
+	cout << "Usage: " << prog_name << " api_endpoint [...]" << endl;
+	cout << "\tapi_endpoint\tSend commit info to one or more URLs." << endl;
 	cout << endl;
-	cout << "Example:" << endl;
-	cout << prog_name << " https://internal.wilcox-tech.com/rcmp/#spark" << endl;
+	cout << "Examples:" << endl;
+	cout << prog_name << " https://internal.wilcox-tech.com/rcmp" << endl;
+	cout << prog_name << " http://rcmp.tenthbit.net/ https://internal/rcmp" << endl;
 }
-
 
 
 /*!
  \brief do stuff with git
  \param path		the path to the git repo
  \param old_id		the old commit ID
+ \param new_id		the new commit ID
  \param ref_name	the name of the ref we're parsing (ref/name/master etc)
  
  This is what main() would look like if we didn't have to sanitise because users
  are lusers.
  */
-int git_hook_main(const char *path, git_oid old_id, git_oid new_id,
-		  const char *ref_name)
+JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id,
+			const char *ref_name)
 {
+	JSONNode *webhook_node, commit_array(JSON_ARRAY), repo_node;
 	git_repository *repo;
+	git_oid old_oid, new_oid;
 	git_revwalk *walker_tx_rgr;
 	git_commit *curr_commit;
 	
+	/* Get the git */
 	if(git_repository_open(&repo, path) != 0)
 	{
 		fprintf(stderr, "Error opening git repository\n");
-		return -1;
+		return NULL;
 	}
 	
+	
+	/* Convert the strings to git oids */
+	git_oid_fromstr(&old_oid, old_id);
+	git_oid_fromstr(&new_oid, new_id);
+	
+	
+	/* Create our revision walker */
 	git_revwalk_new(&walker_tx_rgr, repo);
 	git_revwalk_sorting(walker_tx_rgr, GIT_SORT_TIME | GIT_SORT_REVERSE);
-	git_revwalk_push(walker_tx_rgr, &old_id);
+	git_revwalk_push(walker_tx_rgr, &new_oid);
+	git_revwalk_hide(walker_tx_rgr, &old_oid);
 	
 	
+	/* Set up the basic JSON stuff that won't change */
+	webhook_node = new JSONNode;
+	webhook_node->push_back(JSONNode("before", old_id));
+	webhook_node->push_back(JSONNode("after", new_id));
+	webhook_node->push_back(JSONNode("ref", ref_name));
 	
+	commit_array.set_name("commits");
+	
+	repo_node.set_name("repository");
+	repo_node.push_back(JSONNode("name", "No Name Set"));
+	repo_node.push_back(JSONNode("url", git_repository_path(repo)));
+	
+	// XXX
+	// this will never change between refs (at least, it shouldn't)?
+	// cache this somehow
+	char *path_to_desc = NULL;
+	asprintf(&path_to_desc, "%s/description", git_repository_path(repo));
+	if(path_to_desc != NULL)
+	{
+		FILE *desc_file = fopen(path_to_desc, "r");
+		if(desc_file != NULL)
+		{
+			char *repo_desc = static_cast<char *>(malloc(4096));
+			if(repo_desc != NULL)
+			{
+				fread(repo_desc, 4096, 1, desc_file);
+				repo_node.push_back(JSONNode("description", repo_desc));
+				free(repo_desc);
+			}
+			
+			fclose(desc_file);
+		}
+		
+		free(path_to_desc);
+	}
+	
+	
+	// walk commits, adding to array
+	while((git_revwalk_next(&new_oid, walker_tx_rgr)) == 0)
+	{
+		JSONNode *commit_details, author_node;
+		commit_details = new JSONNode;
+		
+		if(git_commit_lookup(&curr_commit, repo, &new_oid) != 0)
+			continue;
+		
+		time_t raw_commit_time = git_commit_time(curr_commit);
+		struct tm *time = gmtime(&raw_commit_time);
+		char pretty_time[27];
+		strftime(pretty_time, 27, "%FT%H:%M:%S-00:00", time);
+		
+		commit_details->push_back(JSONNode("message", git_commit_message(curr_commit)));
+		commit_details->push_back(JSONNode("timestamp", pretty_time));
+		
+		const git_signature *author = git_commit_author(curr_commit);
+		author_node.push_back(JSONNode("name", author->name));
+		author_node.push_back(JSONNode("email", author->email));
+		author_node.set_name("author");
+		commit_details->push_back(author_node);
+		
+		commit_array.push_back(*commit_details);
+		delete commit_details;
+		
+		git_commit_free(curr_commit);
+	}
+	
+	
+	webhook_node->push_back(commit_array);
+	webhook_node->push_back(repo_node);
+	
+	
+	/* clean up */
 	git_revwalk_free(walker_tx_rgr);
-	
 	git_repository_free(repo);
-	return 0;
+	return webhook_node;
 }
 
 
@@ -124,7 +208,6 @@ int main(int argc, const char * argv[])
 {
 	char *git_repo_path;
 	char *next_ref;
-	int ret;
 	
 	
 	if(argc < 2 || argv[1] == NULL)
@@ -164,7 +247,7 @@ int main(int argc, const char * argv[])
 	next_ref = static_cast<char *>(malloc(512));
 	while((next_ref = fgets(next_ref, 512, stdin)) != NULL)
 	{
-		git_oid old_id, new_id; char *ref;
+		const char *old_id, *new_id; char *ref; JSONNode *node;
 		
 		char *new_id_start;
 		
@@ -174,9 +257,7 @@ int main(int argc, const char * argv[])
 		
 		// Replace the space with NUL so the string is terminated
 		space[0] = '\0';
-		git_oid_fromstr(&old_id, next_ref);
-		
-		printf("old ID: %s\n", next_ref);
+		old_id = next_ref;
 		
 		// The new SHA1 starts after the space
 		new_id_start = space + 1;
@@ -185,25 +266,23 @@ int main(int argc, const char * argv[])
 		
 		// Replace the space with NUL so the string is terminated
 		space[0] = '\0';
-		git_oid_fromstr(&new_id, new_id_start);
-		
-		printf("new ID: %s\n", new_id_start);
+		new_id = new_id_start;
 		
 		// The ref is whatever is left over after the new ID's space.
-		ref = strdup(space + 1);
+		ref = space + 1;
 		
-		printf("ref: %s\n", ref);
+		node = git_hook_main(git_repo_path, old_id, new_id, ref);
 		
-		ret = git_hook_main(git_repo_path, old_id, new_id, ref);
+		if(node == NULL) continue;
 		
-		free(ref);
-		if(ret != 0) break;
+		printf("JSON: %s\n", node->write_formatted().c_str());
+		delete node;
 	}
 	free(next_ref);
 	
 	
 	free(git_repo_path);
 	
-	return ret;
+	return 0;
 }
 
