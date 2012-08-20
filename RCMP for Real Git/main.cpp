@@ -56,6 +56,55 @@ void usage(const char *prog_name)
 
 
 /*!
+ \brief determine what changed for this file, and add to json
+ \param json		JSONNode for the commit detail
+ \param delta		this file's change delta
+ \param progress	how slow we're going through the repo
+ 
+ This method is used as a callback to determine the changes of each file and add
+ each file to the correct JSON array.
+ */
+
+#define GET_OR_MAKE_NODE_NAMED(name) \
+	if(root_node->find(name) != root_node->end())\
+		actual_node = root_node->pop_back(name);\
+	else\
+	{\
+		actual_node = JSONNode(JSON_ARRAY);\
+		actual_node.set_name(name);\
+	}
+
+int handle_wtf_changed(void *json, git_diff_delta *delta, float progress)
+{
+	char *path;
+	JSONNode *root_node = static_cast<JSONNode *>(json);
+	JSONNode actual_node;
+	
+	switch(delta->status)
+	{
+		case GIT_DELTA_ADDED:
+			GET_OR_MAKE_NODE_NAMED("added");
+			path = delta->new_file.path;
+			break;
+		case GIT_DELTA_MODIFIED:
+			GET_OR_MAKE_NODE_NAMED("modified");
+			path = delta->new_file.path;
+			break;
+		case GIT_DELTA_DELETED:
+			GET_OR_MAKE_NODE_NAMED("removed");
+			path = delta->old_file.path;
+			break;
+		default:
+			return 0;
+	}
+	
+	actual_node.push_back(JSONNode("file", path));
+	root_node->push_back(actual_node);
+	return 0;
+}
+
+
+/*!
  \brief do stuff with git
  \param path		the path to the git repo
  \param old_id		the old commit ID
@@ -70,7 +119,7 @@ JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id
 {
 	JSONNode *webhook_node, commit_array(JSON_ARRAY), repo_node;
 	git_repository *repo;
-	git_oid old_oid, new_oid;
+	git_oid old_oid, new_oid, last_oid;
 	git_revwalk *walker_tx_rgr;
 	git_commit *curr_commit;
 	
@@ -132,12 +181,19 @@ JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id
 	
 	
 	// walk commits, adding to array
+	last_oid = old_oid;
+	
 	while((git_revwalk_next(&new_oid, walker_tx_rgr)) == 0)
 	{
 		JSONNode *commit_details, author_node;
+		git_diff_list *diffs;
+		git_tree *old_tree, *new_tree;
+		git_commit *last_commit;
 		commit_details = new JSONNode;
 		
 		if(git_commit_lookup(&curr_commit, repo, &new_oid) != 0)
+			continue;
+		if(git_commit_lookup(&last_commit, repo, &last_oid) != 0)
 			continue;
 		
 		time_t raw_commit_time = git_commit_time(curr_commit);
@@ -154,10 +210,22 @@ JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id
 		author_node.set_name("author");
 		commit_details->push_back(author_node);
 		
+		// XXX XXX
+		// does not check return values of any of the following calls
+		git_commit_tree(&old_tree, last_commit);
+		git_commit_tree(&new_tree, curr_commit);
+		
+		git_diff_tree_to_tree(repo, NULL, old_tree, new_tree, &diffs);
+		git_diff_foreach(diffs, commit_details, handle_wtf_changed, NULL, NULL);
+		git_diff_list_free(diffs);
+		// end XXX XXX
+		
 		commit_array.push_back(*commit_details);
 		delete commit_details;
 		
 		git_commit_free(curr_commit);
+		
+		last_oid = new_oid;
 	}
 	
 	
