@@ -64,16 +64,6 @@ void usage(const char *prog_name)
  This method is used as a callback to determine the changes of each file and add
  each file to the correct JSON array.
  */
-
-#define GET_OR_MAKE_NODE_NAMED(name) \
-	if(root_node->find(name) != root_node->end())\
-		actual_node = root_node->pop_back(name);\
-	else\
-	{\
-		actual_node = JSONNode(JSON_ARRAY);\
-		actual_node.set_name(name);\
-	}
-
 int handle_wtf_changed(void *json, git_diff_delta *delta, float progress)
 {
 	char *path;
@@ -83,15 +73,15 @@ int handle_wtf_changed(void *json, git_diff_delta *delta, float progress)
 	switch(delta->status)
 	{
 		case GIT_DELTA_ADDED:
-			GET_OR_MAKE_NODE_NAMED("added");
+			actual_node = root_node->pop_back("added");
 			path = delta->new_file.path;
 			break;
 		case GIT_DELTA_MODIFIED:
-			GET_OR_MAKE_NODE_NAMED("modified");
+			actual_node = root_node->pop_back("modified");
 			path = delta->new_file.path;
 			break;
 		case GIT_DELTA_DELETED:
-			GET_OR_MAKE_NODE_NAMED("removed");
+			actual_node = root_node->pop_back("removed");
 			path = delta->old_file.path;
 			break;
 		default:
@@ -155,6 +145,11 @@ JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id
 	repo_node.push_back(JSONNode("name", "No Name Set"));
 	repo_node.push_back(JSONNode("url", git_repository_path(repo)));
 	
+	JSONNode owner(JSON_NODE);
+	owner.set_name("owner");
+	owner.push_back(JSONNode("name", "Wilcox Technologies"));
+	repo_node.push_back(owner);
+	
 	// XXX
 	// this will never change between refs (at least, it shouldn't)?
 	// cache this somehow
@@ -189,6 +184,7 @@ JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id
 		git_diff_list *diffs;
 		git_tree *old_tree, *new_tree;
 		git_commit *last_commit;
+		char raw_oid[41];
 		commit_details = new JSONNode;
 		
 		if(git_commit_lookup(&curr_commit, repo, &new_oid) != 0)
@@ -201,6 +197,10 @@ JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id
 		char pretty_time[27];
 		strftime(pretty_time, 27, "%FT%H:%M:%S-00:00", time);
 		
+		git_oid_fmt(raw_oid, &new_oid);
+		raw_oid[40] = '\0';
+		
+		commit_details->push_back(JSONNode("id", raw_oid));
 		commit_details->push_back(JSONNode("message", git_commit_message(curr_commit)));
 		commit_details->push_back(JSONNode("timestamp", pretty_time));
 		
@@ -209,6 +209,16 @@ JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id
 		author_node.push_back(JSONNode("email", author->email));
 		author_node.set_name("author");
 		commit_details->push_back(author_node);
+		commit_details->push_back(JSONNode("url", "http://localhost/"));
+		
+		JSONNode added(JSON_ARRAY), modified(JSON_ARRAY), removed(JSON_ARRAY);
+		added.set_name("added");
+		modified.set_name("modified");
+		removed.set_name("removed");
+		
+		commit_details->push_back(added);
+		commit_details->push_back(modified);
+		commit_details->push_back(removed);
 		
 		// XXX XXX
 		// does not check return values of any of the following calls
@@ -276,6 +286,7 @@ int main(int argc, const char * argv[])
 {
 	char *git_repo_path;
 	char *next_ref;
+	vector<WTConnection *> conns;
 	
 	
 	if(argc < 2 || argv[1] == NULL)
@@ -306,6 +317,14 @@ int main(int argc, const char * argv[])
 	{
 		perror("can't find git path");
 		return 1;
+	}
+	
+	
+	for(size_t urls = 1; urls < argc; urls++)
+	{
+		WTConnection *conn = new WTConnection(NULL);
+		conn->connect(argv[urls]);
+		conns.push_back(conn);
 	}
 	
 	
@@ -343,10 +362,34 @@ int main(int argc, const char * argv[])
 		
 		if(node == NULL) continue;
 		
-		printf("JSON: %s\n", node->write_formatted().c_str());
+		for(size_t next_conn = 0; next_conn < conns.size(); next_conn++)
+		{
+			WTConnection *conn = conns.at(next_conn);
+			char *result;
+			string payload = "payload=" + string(URLEncode(node->write().c_str()));
+			uint64_t len = payload.length();
+#ifdef DEBUG
+			fprintf(stderr, "POSTing %s (%llu bytes) to %s\n", payload.c_str(), len, argv[next_conn + 1]);
+#endif
+			result = static_cast<char *>(conn->upload(payload.c_str(), &len));
+#ifdef DEBUG
+			if(result != NULL)
+				fprintf(stderr, "result: %s\n(%llu bytes)", result, len);
+#endif
+			free(result);
+		}
 		delete node;
 	}
 	free(next_ref);
+	
+	
+	while(conns.size() > 0)
+	{
+		WTConnection *conn = conns.back();
+		conn->disconnect();
+		delete conn;
+		conns.pop_back();
+	}
 	
 	
 	free(git_repo_path);
