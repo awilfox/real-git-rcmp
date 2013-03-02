@@ -64,9 +64,9 @@ void usage(const char *prog_name)
  This method is used as a callback to determine the changes of each file and add
  each file to the correct JSON array.
  */
-int handle_wtf_changed(void *json, git_diff_delta *delta, float progress)
+int handle_wtf_changed(const git_diff_delta *delta, float progress, void *json)
 {
-	char *path;
+	const char *path;
 	JSONNode *root_node = static_cast<JSONNode *>(json);
 	JSONNode actual_node;
 	
@@ -225,8 +225,8 @@ JSONNode *git_hook_main(const char *path, const char *old_id, const char *new_id
 		git_commit_tree(&old_tree, last_commit);
 		git_commit_tree(&new_tree, curr_commit);
 		
-		git_diff_tree_to_tree(repo, NULL, old_tree, new_tree, &diffs);
-		git_diff_foreach(diffs, commit_details, handle_wtf_changed, NULL, NULL);
+		git_diff_tree_to_tree(&diffs, repo, old_tree, new_tree, NULL);
+		git_diff_foreach(diffs, handle_wtf_changed, NULL, NULL, commit_details);
 		git_diff_list_free(diffs);
 		// end XXX XXX
 		
