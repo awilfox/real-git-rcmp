@@ -11,8 +11,13 @@
 #include <libAmy/libAmy.h>
 #include <errno.h>
 #include <iostream>
+#include "config.h"
 using namespace std;
 
+
+#ifdef HAVE_PROGINVOC
+extern char *program_invocation_short_name;
+#endif
 
 
 /*!
@@ -291,7 +296,13 @@ int main(int argc, const char * argv[])
 	
 	if(argc < 2 || argv[1] == NULL)
 	{
+#if defined(HAVE_GETPROGNAME)
 		usage(getprogname());
+#elif defined(HAVE_PROGINVOC)
+		usage(program_invocation_short_name);
+#else
+		usage("real-git-rcmp");
+#endif
 		return -1;
 	}
 	

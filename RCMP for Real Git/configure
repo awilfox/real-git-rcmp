@@ -1,0 +1,296 @@
+#!/usr/bin/env perl
+
+
+local $cxx = "";
+local $ssl = "";
+local @args = ();
+
+
+sub do_test
+{
+	my ($test) = @_;
+	open(CONF_TEST, ">conftest.cxx");
+	print CONF_TEST $test;
+	close(CONF_TEST);
+	my $result = system($cxx, "-o", "conftest", "conftest.cxx", @args);
+	unlink("conftest.cxx");
+	unlink("conftest");
+	return $result;
+}
+
+
+####
+# check for compiler
+####
+sub check_cxx
+{
+	# let's see if the user was helpful
+	$cxx = $ENV{"CXX"};
+	$test = <<CONF_TEST;
+int main() { return 0; }
+CONF_TEST
+	$res = do_test($test);
+	if ($res != 0)
+	{
+		$cxx = "clang++";
+		$res = do_test($test);
+		if ($res != 0)
+		{
+			die("no compiler found!\n");
+			return 0;
+		}
+	}
+	print "$cxx\n";
+	return 1;
+};
+
+
+
+####
+# check for OpenSSL
+####
+sub check_ssl
+{
+	$test = <<CONF_TEST;
+#include <openssl/ssl.h>
+int main() { return 0; }
+CONF_TEST
+	push(@args, "-lssl");
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes (standard)\n";
+		return 1;
+	}
+	
+	push(@args, "-I/usr/local/include");
+	push(@args, "-L/usr/local/lib");
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes (/usr/local)\n";
+		$ssl = "/usr/local";
+		return 1;
+	}
+	
+	pop(@args);
+	pop(@args);
+	push(@args, "-I/usr/local/ssl/include");
+	push(@args, "-L/usr/local/ssl/lib");
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes (/usr/local/ssl)\n";
+		$ssl = "/usr/local/ssl";
+		return 1;
+	}
+	
+	pop(@args);
+	pop(@args);
+	die("no\n");
+	return 0;
+};
+
+
+
+####
+# check for libgit2
+####
+sub check_git
+{
+	$test = <<CONF_TEST;
+#include <git2.h>
+int main() { return 0; }
+CONF_TEST
+	push(@args, "-lgit2");
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes\n";
+		return 1;
+	}
+	
+	push(@args, "-I/usr/local/include");
+	push(@args, "-L/usr/local/lib");
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes\n";
+		return 1;
+	}
+	
+	pop(@args);
+	pop(@args);
+	die("no\n");
+	return 0;
+};
+
+
+
+####
+# check for eScape
+####
+sub check_Amy
+{
+	$test = <<CONF_TEST;
+#include <libAmy/libAmy.h>
+int main() { WTConnection *connection = new WTConnection(NULL); delete connection; return 0; }
+CONF_TEST
+	push(@args, "-lamy");
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes\n";
+		return 1;
+	}
+	
+	push(@args, "-I/usr/local/include");
+	push(@args, "-L/usr/local/lib");
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes\n";
+		return 1;
+	}
+	
+	pop(@args);
+	pop(@args);
+	push(@args, "-I/opt/eScape/include");
+	push(@args, "-L/opt/eScape/lib");
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes\n";
+		return 1;
+	}
+	
+	pop(@args);
+	pop(@args);
+	die("no\n");
+	return 0;
+};
+
+
+
+####
+# check for getprogname
+####
+sub check_getprogname
+{
+	$test = <<CONF_TEST;
+#include <stdlib.h>
+int main() { getprogname(); return 0; }
+CONF_TEST
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes\n";
+		return 1;
+	}
+	
+	print "no\n";
+	return 0;
+};
+
+
+
+####
+# check for program_invocation_name
+####
+sub check_proginvoc
+{
+	$test = <<CONF_TEST;
+#define _GNU_SOURCE
+#include <errno.h>
+#include <stdio.h>
+extern char *program_invocation_short_name;
+int main() { printf("%s", program_invocation_short_name); return 0; }
+CONF_TEST
+	$res = do_test($test);
+	if ($res == 0)
+	{
+		print "yes\n";
+		return 1;
+	}
+	
+	print "no\n";
+	return 0;
+};
+
+
+
+# I hate autotools
+print "checking for autotools... none required ;)\n";
+
+
+# check for working compiler
+print "checking for compiler... ";
+check_cxx();
+
+
+# check for OpenSSL
+print "checking for OpenSSL... ";
+check_ssl();
+
+
+# check for libgit2
+print "checking for libgit2... ";
+check_git();
+
+
+# check for eScape
+print "checking for Amy... ";
+check_Amy();
+
+
+# see if we can use getprogname
+print "checking for getprogname... ";
+$progname = check_getprogname();
+
+
+if (!$progname)
+{
+	# consider the alternative... *shudder* glibc
+	print "checking for program_invocation_name... ";
+	$glibc = check_proginvoc();
+}
+
+
+print "configure: creating config.h\n";
+open(CONFIG_H, ">config.h");
+print CONFIG_H <<'CONF_FILE';
+#ifndef __perl_gen_config_h_
+#define __perl_gen_config_h_
+
+CONF_FILE
+if ($progname)
+{
+	print CONFIG_H "#define HAVE_GETPROGNAME 1\n";
+}
+else
+{
+	print CONFIG_H "#undef HAVE_GETPROGNAME\n";
+}
+
+if ($glibc)
+{
+	print CONFIG_H "#define HAVE_PROGINVOC 1\n";
+}
+else
+{
+	print CONFIG_H "#undef HAVE_PROGINVOC\n";
+}
+
+print CONFIG_H "#endif\n";
+close(CONFIG_H);
+
+
+print "configure: creating Makefile\n";
+open(MAKEFILE, ">Makefile");
+print MAKEFILE <<CONF_FILE;
+
+real-git-rcmp: main.cpp
+	$cxx @args -o real-git-rcmp main.cpp json/Source/*.cpp
+CONF_FILE
+close(MAKEFILE);
+

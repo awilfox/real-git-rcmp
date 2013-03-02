@@ -9,10 +9,6 @@ from any git repository hosted on any git server.
 * libgit2, available [on GitHub](https://github.com/libgit2/libgit2)
 * The eScape library suite, available [on GitHub](https://github.com/wilcox-tech/eScape)
 
-**A note of caution**: This code has not been well-tested on Linux; getprogname()
-may not be implemented on your version of glibc and it may be necessary to
-change the code to work properly.  Better Linux support is planned.
-
 ## How it works
 
 **real-git-rcmp** uses libgit2 to investigate the changes received from the
@@ -23,14 +19,16 @@ specified on the command line using libAmy, a part of eScape.
 ## Building
 
 Unix-likes:
-
-	g++ -o real-git-rcmp main.cpp -I/path/to/libgit2-and-eScape \
-	 -L/path/to/libgit2-and-escape -lgit2 -lAmy
-
 Mac OS X:
 
-	clang++ -o real-git-rcmp main.cpp -I/path/to/libgit2-and-eScape \
-	 -L/path/to/libgit2-and-escape -lgit2 -lAmy
+	./configure
+	make
+
+Note: The ./configure script is very simple, if you know what you're doing you might
+be better off just running:
+	
+	clang++ -o real-git-rcmp main.cpp json/Source/*.cpp -I/path/to/libgit2-and-eScape \
+	 -L/path/to/libgit2-and-escape -lgit2 -lAmy -lssl
 
 Windows:
 

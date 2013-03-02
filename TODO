@@ -1,5 +1,4 @@
 - binaries
-- linux support
 - wider, harder testing (more than just rcmp and requestbin at least)
 - testing on solaris
 - possible win32?  does anyone /actually/ host git repos on win32?
